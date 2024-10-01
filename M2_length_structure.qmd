@@ -1,5 +1,5 @@
 ---
-title: "M2 FIMS features design doc"
+title: "Length-composition data"
 format: html
 execute: 
   eval: false
@@ -10,7 +10,7 @@ editor: visual
 
 ## Goal
 
--   Priority 1: Ability to fit to marginal length composition data
+-   Priority 1: Ability to fit to marginal length-composition data
 -   Priority 2: Ability to estimate growth parameters
 
 ## Alternative methods for including length data in age-structured assessment models
