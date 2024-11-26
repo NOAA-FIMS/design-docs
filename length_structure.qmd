@@ -1,12 +1,10 @@
 ---
-title: "Length-composition data"
+title: "Length structure"
 format: html
 execute: 
   eval: false
 editor: visual
 ---
-
-# Length data
 
 ## Goal
 
@@ -147,13 +145,13 @@ Notes and references in [M2 development notes folder](https://drive.google.com/d
 
 </mark>
 
-| Approach                | Pros                                                                         | Cons                                                                                             |
-|-------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| Empirical Length at age | Fast and allows function forms of length selection                           | No uncertainty in length at age and no fishery impacts on length at age structure                |
-| Alaska method           | allow length-based selectivity                                               | does not allow for growth estimation or fishery impact on length structure                       |
-| SAM method              | State-space flexibility                                                      | Current practices in US focused on parametric modeling. Length not incorporated in current form. |
-| Age-length key (SS3)    | allow for selectivity at length and tracks numbers- and age-at-length        | can be slow due to dense matrices. does not track length specific fishing impacts.               |
-| Full age-length         | does not assume fixed age-length key. Potential to scale complexity/runtime. | could be computationally intensive based on bin size.                                            |
+| Approach                | Pros                                                                              | Cons                                                                                                           |
+|-------------------------|-----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| Empirical length at age | Fast and allows function forms of length selection                                | No uncertainty in length at age and no fishery impacts on length at age structure                              |
+| Alaska method           | Allows for length-based selectivity                                               | Does not allow for growth estimation or fishery impact on length structure                                     |
+| SAM method              | State-space flexibility                                                           | Current practices in USA is focused on parametric modeling and SAM does not incorporate length in current form |
+| Age-length key (SS3)    | Allows for selectivity at length and tracks numbers- and age-at-length            | Can be slow due to dense matrices and does not track length specific fishing impacts                           |
+| Full age-length         | Does not assume fixed age-length key with a potential to scale complexity/runtime | Could be computationally intensive based on bin size                                                           |
 
 ## References
 
