@@ -6,28 +6,76 @@ execute:
 editor: visual
 ---
 
-## Goal
+# TODO:
 
--   Priority 1: Ability to fit to marginal length-composition data
--   Priority 2: Ability to estimate growth parameters
+-   convert all citations to bib form
 
-## Alternative methods for including length data in age-structured assessment models
+# Length data
 
-### An empirical length-at-age method for length-based selectivity
+Length-composition data are often readily sampled from fish populations because they are relatively quick to obtain and the measurements do not require further processing in a lab after their collection, whereas rings on the otoliths need to be read before an age can be determined after their collection. Furthermore, lengths can be collected from discarded as well as retained fish because they do not require that the sample is dead. Although, there is ongoing work to be able to sample ages from live fish (todo: citation). Thus, length data are almost always more readily available from sampling programs than age data.
 
-This approach would not use length or conditional age-at-length data, avoids estimation of growth, and is presumably similar in run times to models with age-specific selectivity. Suppose there is a matrix of annual empirical length-at-age estimates analogous to weight-at-age. To estimate length-based selectivity one could specify selectivity-at-age as a function of length-at-age: $s_a = s\left[[f\left(L_a\right)\right]$ where $f()$ could be a functional form (e.g., logistic, double-normal, etc.). The empirical lengths-at age could be derived in various ways, but for a specific stock would probably be analogous to how the corresponding empirical weight at age is calculated.
+TODO: Ask Jenny B. to write a paragraph about the type of information that is contained within length data and what it means with respect to life history, energetic/metabolic theory, and whatever else is pertinent.
 
-<mark>**IMPLEMENTATION NOTES:** Trade-offs of this approach include: The inability to incorporate uncertainty in the length-at-age distribution. 2) Assumes no variability in length-at-age. 3) similar to previous approaches do not allow length-based mortality to influence the length structure of the population.</mark>
+# Fitting to length data
 
-### AK method
+Within an assessment model, length data has the potential to provide information on fish growth, fleet selectivity, and potentially recruitment depending on how easily cohorts can be discerned using binned length data. There are some data-limited assessments that only fit to length data and do not include any age data (todo: citation) but fitting both length and age data is ideal for many reasons. For example, selectivity is often a length-based process that cannot adequately be described with ages alone. Thus, it is important that users have the ability to fit to length data when using FIMS.
 
-Marginal age and length compositions are often fit in bespoke ADMB models in Alaska. This approach relies on age-based selectivity functions, and growth is not estimated internally.
+There are several approaches available to fit length data in an assessment model. Below we outline each of the methods and weigh the pros and cons for including each particular method in FIMS with respect to the following goals:
+
+## Goals
+
+-   Priority 1: Fit to marginal length-composition data
+-   Priority 2: Internally estimate growth
+
+## Potential methods
+
+TODO: complete the following table.
+
+| Approach | FIMS version | Pros | Cons |
+|---------------|---------------|-----------------|---------------------------|
+| Empirical length at age | NA | Fast, allows functional forms of length selection | No uncertainty in length at age and no fishery impacts on length-at-age structure |
+| Age–length transition matrix | 0.3.0 | Allows for length-based selectivity | Does not allow for growth estimation or fishery impact on length-at-age structure |
+| State-space |  | State-space flexibility | Current practices in USA is focused on parametric modeling and SAM does not incorporate length in current form |
+| Estimated age–length transition matrix |  | Allows for selectivity at length and tracks numbers- and age-at-length | Slow due to dense matrices, does not track length specific fishing impacts |
+| Full age–length structure |  | Does not assume fixed age-length key with a potential to scale complexity/runtime | Could be computationally intensive based on bin size |
+
+: Potential methods for fitting to length data in an assessment model.
+
+### Empirical length at age
+
+#### Data
+
+Empirical length-at-age data are observations of the relationship between the length of an organism and its age. Specifically, length data are coerced into a matrix of annual lengths for given age bin without regard to theory or logic, i.e., they are raw measurements without any associated uncertainty or model. The process of using annual length-at-age measurements in an assessment model is not particularly common but users might be familiar with the process given that empirical weight-at-age data are often used instead of estimating growth. Using empirical length-at-age data would allow for the estimation of length-based selectivity but it would not allow for the estimation of growth within FIMS. Thus, adding empirical length at age to FIMS would not necessarily slow down model run times.
+
+Calculating empirical length-at-age data for input to the assessment model would likely employ the same process as empirical weight-at-age data where annual average weights for each age are calculated from measured fish. For years and ages where there are no measurements, borrowing rules can be used to fill in the missing values, e.g., similar ages within the year or similar years within the age. More recently, generalized linear mixed effects models have proven useful for estimating weight-at-age data and do not require the use of borrowing rules to fill in missing values (todo: cite the pacific hake assessment or pollock) and similar models could be used for length at age.
+
+#### Method
+
+Within the assessment model, length-based selectivity would be incorporated into the model by specifying selectivity-at-age as a function of length at age, $s_a = s\left[f\left(L_a\right)\right]$, where $f()$ could be a functional form (e.g., logistic, double-normal, etc.). todo: More information here on the method.
+
+#### Caveats
+
+-   Inability to incorporate uncertainty in the length-at-age distribution.
+
+-   Assumes no variability in length-at-age.
+
+-   Does not allow length-based mortality to influence the length structure of the population.
+
+### Age–length transition matrix
+
+#### Data
+
+Methods are needed to calculate the age–length transition matrix outside of the assessment model. TODO: Provide more information on how these matrices are calculated.
+
+#### Method
+
+Marginal length-composition data can be fit in an assessment model using an age–length transition matrix that is used to convert ages to lengths within the assessment model. The population dynamics remain age based like a pure statistical catch-at-age model but predicted proportions at age are converted to predicted proportions at length using the dot product of the predicted proportions at age and the age–length transition matrix, $\phi_{y,f,l,a}$. $\phi$ should be year ( $y$ ) and fleet ( $f$ ) specific but are currently just population specific (TODO: verify this is true). This method is commonly used for models presented to the North Pacific Fisheries Management Council and is sometimes referred to as the Alaska Method.
 
 Predicted catch-at-age for year $y$ and fishery $f$ is calculated using element-wise multiplication
 
 $$ \hat{C}_{y,f,a}=F_{y,f,a}N_{y,a}\frac{(1-\text{exp}(-Z_{y,a}))}{Z_{y,a}} $$
 
-where $N_{y,a}$ is the abundance-at-age $a$ during year $y$, $Z_{y,a}$ is the total age-specific mortality for each year, and $F_{y,f,a}$ is the fleet-specific age-specific fishing mortality for each year.
+where $N_{y,a}$ is the abundance-at-age $a$ during year $y$, $Z_{y,a}$ is the total age-specific mortality for year $y$, and $F_{y,f,a}$ is the fleet- and age-specific fishing mortality for year $y$.
 
 Similarly, the predicted abundance-at-age $\hat{I}_{y,i,a}$ for the survey index is calculated as:
 
@@ -35,21 +83,27 @@ $$ \hat{I}_{y,i,a}=S_{y,i,a}N_{y,a}\text{exp}(-f_{y,a}Z_{y,a}) $$
 
 where $f_{y,a}$ is the fraction of the year when the survey was conducted.
 
-The predicted proportions-at-age (i.e., marginal age compositions) are obtained using:
+For a fishing fleet, the predicted proportions at age (i.e., marginal age compositions) are obtained using:
 
 $$ \hat{p}_{y,f,a}=\frac{\hat{C}_{y,f,a}}{\sum\limits_{a}{\hat{C}_{y,f,a}}} $$
 
-These are converted to predicted proportions-at-length (i.e., marginal length compositions) using the dot product of $\hat{p}_{y,f,a}$ and the fleet-specific age-length transition matrix $\phi_{y,f,l,a}$:
+Predicted proportions at age are converted to predicted proportions at length (i.e., marginal length compositions) using the dot product of $\hat{p}_{y,f,a}$ and the fleet-specific age-length transition matrix $\phi_{y,f,l,a}$:
 
 $$ \hat{p}_{y,f,l}=\hat{p}_{y,f,a}\cdot\phi_{y,f,l,a} $$
 
-Predicted survey age and length marginal compositions are obtained in an identical fashion using the age-length transition matrix specified for that survey.
+Predicted survey age and length marginal compositions are obtained in an identical fashion using the age–length transition matrix specified for that survey but with the expected abundance rather than catch. TODO: Check with Nathan regarding what is done because I do not think that the composition data is tied to the catch or the index anymore.
 
-<mark>**IMPLEMENTATION NOTES:** This method has the benefit of being very simple. The known drawbacks are that it does not currently include length-based selectivity, and at least in Alaska, growth (i.e., the age-length transition matrix) is not estimated internally. Extensions could be developed that include length-based selectivity; for example, that convert length-based selectivity to age-based selectivity using the transpose of the age-length transition matrix. When marginal length compositions are fit, this would require an extra dot product calculation in the conversion from $\hat{p}_{y,f,a}$ to $\hat{p}_{y,f,l}$. Note that the SS3 approach is doing the same calculations but doing so using element-wise multiplication and summing over lengths or ages to get marginal age or length compositions, respectively. In SS3, these calculations happen regardless of whether age or length-based selectivity is used. It is unclear if the element-wise multiplication approach in SS3 or the dot product approach have substantial impacts on model run-time or if the model compiler will treat these approaches as equivalent. </mark>
+#### Caveats
 
-### SAM method
+-   Does not currently include length-based selectivity but this could be included in the future. For example, one could convert length-based selectivity to age-based selectivity using the transpose of the age-length transition matrix. When marginal length compositions are fit, this would require an extra dot product calculation in the conversion from $\hat{p}_{y,f,a}$ to $\hat{p}_{y,f,l}$. Note that the SS3 approach is doing the same calculations but doing so using element-wise multiplication and summing over lengths or ages to get marginal age or length compositions, respectively. In SS3, these calculations happen regardless of whether age or length-based selectivity is used. It is unclear if the element-wise multiplication approach in SS3 or the dot product approach have substantial impacts on model run-time or if the model compiler will treat these approaches as equivalent.
 
-SAM is a state-space assessment model used in several ICES stock assessments (is the best citation Nielsen and Berg, 2014?).
+-   Does not allow for the estimation of growth because the age–length transition matrix is not estimated internally.
+
+### State space
+
+State-space assessment models allow for the estimation of both the observed and unobserved processes (todo: citation), which allows for collapsing the constructs of fishing mortality and selectivity into a single process. TODO: put this in context for fisheries, i.e., that you do not have to estimate selectivity because every process is in terms of age, e.g., F-at-age.
+
+Two well-known state-space assessment frameworks are the State-Space Assessment Model (SAM), which is used in several ICES stock assessments (Nielsen and Berg, 2014; Berg and Nielsen, 2016) and the Woods Hole Assessment Model (WHAM; Stock and Miller, 2021). TODO: statement about these models and how the equation is is the same but in log space.
 
 $$ \text{log}\hat{C}_{y,f,a}=\text{log}F_{y,f,a}-\text{log}Z_{y,f,a}+\text{log}N_{y,a}+\text{log}(1-\text{exp}(-Z_{y,a})) $$
 
@@ -57,15 +111,23 @@ $$ \text{log}\hat{C}_{y,f,a}=\text{log}F_{y,f,a}-\text{log}Z_{y,f,a}+\text{log}N
 
 $$ \hat{C}_{y,l}=\hat{C}_{y,a}\cdot\phi_{y,l,a} $$
 
-Similarly could convert to $F_{y,f,l}$ if needed:
+TODO: Decifer this statement. Similarly could convert to $F_{y,f,l}$ if needed:
 
 $$ F_{y,f,l}=F_{y,f,a}\cdot\phi_{y,f,l,a} $$
 
-<mark>**IMPLEMENTATION NOTES:** This method has the benefit of being a purely state-space model and collapses the constructs of fishing mortality and selectivity, thus reducing model complexity in theory. A drawback of this approach is that we lose parametric selectivity functions that are prevalent in the U.S. It is currently unknown how well growth (i.e., the $\phi$ matrix) can be estimated internally given full state space flexibility). We don't know currently know the trade offs for efficiency.</mark>
+#### Caveat
 
-### Stock Synthesis 3
+-   A drawback of state-space assessment models is the inability to use parametric selectivity functions that are prevalent in the U.S.
 
-This method is used in Stock Synthesis 3 (SS3; Methot and Wetzel, 2013) and was recently implemented in the ["growth"](https://github.com/GiancarloMCorrea/wham/tree/growth) branch of the Wood's Hole Assessment Model (WHAM; Stock and Miller, 2021; Correa et al., 2023).
+-   It is currently unknown how well growth (i.e., $\phi$ matrix) can be estimated internally given the flexibility of a full state-space model. We do not currently know currently the trade offs for efficiency. **manuscript idea**
+
+### Estimated age–length transition matrix
+
+The age–length transition matrices can be estimated within the assessment model instead of specified as a fixed input. This method has a proven track record for estimating growth (todo: citation), fitting to numerous types of size-based data (e.g., marginal length-composition and conditional age-at-length data), and allowing for the estimation of length-based and/or age-based selectivity functions. The capacity to model length- and age-based selectivity effects simultaneously has been found to significantly improve fits to the composition data for red snapper in the southeast U.S.A. This method of being able to estimate the age–length transition matrix can be found in Stock Synthesis 3 (SS3; Methot and Wetzel, 2013) and was recently implemented in the ["growth"](https://github.com/GiancarloMCorrea/wham/tree/growth) branch of the Wood's Hole Assessment Model (WHAM; Stock and Miller, 2021; Correa et al., 2023).
+
+#### Data
+
+#### Model
 
 Predicted catch-at-age and -length for year $y$ and fishery $f$ are calculated using element-wise multiplication
 
@@ -73,7 +135,7 @@ $$
 \hat{C}_{y,f,l,a}=\phi_{y,f,l,a}S_{y,f,l}S_{y,f,a}F_{y,f}N_{y,a}\frac{(1-\text{exp}(-Z_{y,a}))}{Z_{y,a}}
 $$
 
-where $N_{y,a}$ is the abundance-at-age $a$ during year $y$, $Z_{y,a}$ is the total age-specific mortality, $F_{y,f}$ is the fleet-specific annual fishing mortality, $\phi_{y,f,l,a}$ is the fleet-specific age-length transition matrix (i.e., the proportion of fish of age $a$ in length bin $l$), and $S_{y,f,l}$ and $S_{y,f,a}$ are the selectivity-at-length and selectivity-at-age, respectively. When an age based selectivity $S_{y,f,a}$ is not specified by the user then it is set to a matrix of 1s of the appropriate dimensions. Similarly when length based selectivity $S_{y,f,l}$ is not specified it is set to a matrix of 1s. This structure allows users to utilize different selectivity forms between fleets as well as combinations of age and size selectivity patterns in a single fleet which can be useful, for instance to combine a gear based length specific selectivity with an age based spatial selectivity due to age specific migration.
+where $N_{y,a}$ is the abundance-at-age $a$ during year $y$, $Z_{y,a}$ is the total age-specific mortality in year $y$, $F_{y,f}$ is the fleet-specific ($f$) annual fishing mortality, $\phi_{y,f,l,a}$ is the fleet-specific age-length transition matrix (i.e., the proportion of fish of age $a$ in length bin $l$) for year $y$, and $S_{y,f,l}$ and $S_{y,f,a}$ are the selectivity-at-length and selectivity-at-age, respectively. When an age-based selectivity $S_{y,f,a}$ is not specified by the user then it is set to a matrix of 1s of the appropriate dimensions. Similarly when length based selectivity $S_{y,f,l}$ is not specified it is set to a matrix of 1s. This structure allows users to utilize different selectivity forms between fleets as well as combinations of age and size selectivity patterns in a single fleet which can be useful, for instance to combine a gear-based, length-specific selectivity with an age-based selectivity due to age-specific migration.
 
 Note that $Z_{y,a}$ is age-based and relies on the calculation of total age-based fishing mortality $F_{y,a}$, which in turn relies on age-based fishery selectivity. Therefore, when selectivity-at-length is used, it must first be converted to selectivity-at-age using the dot product of selectivity-at-length and the transpose of the age-length transition matrix:
 
@@ -81,7 +143,7 @@ $$
 S_{y,f,a}=S_{y,f,l}\cdot\phi_{y,f,l,a}^\top
 $$
 
-This implied fleet-specific selectivity-at-age is used to obtain $F_{y,f,a}$, which can be summed across fleets, and combined with natural mortality to obtain $Z_{y,a}$ for use in the predicted catch-at-age and -length equation above.
+This implied fleet-specific selectivity-at-age is used to obtain $F_{y,f,a}$, which can be summed across fleets and combined with natural mortality to obtain $Z_{y,a}$ for use in the predicted catch-at-age and -length equation above.
 
 The predicted abundance index-at-age and -length for year $y$ and index $i$ is obtained using
 
@@ -109,11 +171,13 @@ $$
 
 Predicted survey age and length marginal compositions are obtained in an identical fashion.
 
-<mark>**IMPLEMENTATION NOTES:** This method has a proven track record estimating growth (**cite**), fitting to numerous types of size-based data (e.g., marginal length compositions, conditional age-at-length), and estimating both length-based and age-based selectivity functions. This method also provides the capacity to model joint length/age-based selectivity effects simultaneously which has been found to significantly improve composition fits in testing in the southeast for Red Snapper. The standard normal cumulative density function used to generate the age-length transition matrix will result in a dense matrix, that when multiplied by other quantities requires a large amount of computation and resulting long estimation times. Giancarlo tried to use `Eigen::SparseMatrix` to alleviate this issue in [WHAM](https://github.com/GiancarloMCorrea/wham/blob/3af37de1566f3a99b967901e540d81ef70f613a0/src/helper_functions.hpp#L1465), but it did not help. For Milestone 2, $\phi_{y,f,l,a}$ and $\phi_{y,i,l,a}$ can be estimated externally and input as fixed matrices for each survey and fishery. In future milestones, this framework will allow us flexibility to estimate growth and length-based selectivity without needing to update this aspect of the observation model. It will also allow us to include a range of parametric, semi-parametric, and non-parametric growth functions using random effects (Correa et al., 2023). In order to speed up optimization once growth is estimated, methods should be developed to make the $\phi$ matrices sparse to reduce computation time.
+#### Caveats
 
-One significant limitation of this approach is that while length-based selectivity patterns can be functionally specified in SS3 they do not actually impact the length-at-age structure of the population which is calculated from a normal distribution around mean size at age in each year/age calculation step. This results in the model requiring much if not all of the computational burden of a age-and-length conditioned model without many of the benefits. Length specific effects such as over-depletion of fast growing individuals are hypothesized to be a potential source of the frequent conflict between length and age composition data in many assessments. This potential problem can be partially addressed in SS3 through the use of growth morphs which can represent sub-populations with differing growth rates. However, adding multiple growth morphs on top of the existing length-at-age redistribution function will even further slow model run times. </mark>
+The standard normal cumulative density function used to generate the age-length transition matrix will result in a dense matrix, that when multiplied by other quantities requires a large amount of computation and resulting long estimation times. Giancarlo tried to use `Eigen::SparseMatrix` to alleviate this issue in [WHAM](https://github.com/GiancarloMCorrea/wham/blob/3af37de1566f3a99b967901e540d81ef70f613a0/src/helper_functions.hpp#L1465), but it did not help. For Milestone 2, $\phi_{y,f,l,a}$ and $\phi_{y,i,l,a}$ can be estimated externally and input as fixed matrices for each survey and fishery. In future milestones, this framework will allow us flexibility to estimate growth and length-based selectivity without needing to update this aspect of the observation model. It will also allow us to include a range of parametric, semi-parametric, and non-parametric growth functions using random effects (Correa et al., 2023). In order to speed up optimization once growth is estimated, methods should be developed to make the $\phi$ matrices sparse to reduce computation time.
 
-### A fully age and length structured model
+One significant limitation of this approach is that while length-based selectivity patterns can be functionally specified in SS3 they do not actually impact the length-at-age structure of the population which is calculated from a normal distribution around mean size at age in each year/age calculation step. This results in the model requiring much if not all of the computational burden of a age-and-length conditioned model without many of the benefits. Length specific effects such as over-depletion of fast growing individuals are hypothesized to be a potential source of the frequent conflict between length and age composition data in many assessments. This potential problem can be partially addressed in SS3 through the use of growth morphs which can represent sub-populations with differing growth rates. However, adding multiple growth morphs on top of the existing length-at-age redistribution function will even further slow model run times.
+
+### Full age–length structure
 
 An alternate path for FIMS could be to specify abundance at age and length allowing for both age- and length-specific selectivity and growth-related fishery impacts such as depletion of fast-growing individuals. This scenario would track abundance-at-age and -length explicitly rather than through a fixed age-length translation matrix.
 
@@ -142,16 +206,6 @@ Where numbers at age $a2$ and length $l2$ at time $t2$ are calculated as a sum o
 ## Summary of alternative methods
 
 Notes and references in [M2 development notes folder](https://drive.google.com/drive/folders/1Wh9Exh_kMlo97Z-r-Luj1_mjB4XOnRh4)
-
-</mark>
-
-| Approach                | Pros                                                                              | Cons                                                                                                           |
-|-------------------------|-----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| Empirical length at age | Fast and allows function forms of length selection                                | No uncertainty in length at age and no fishery impacts on length at age structure                              |
-| Alaska method           | Allows for length-based selectivity                                               | Does not allow for growth estimation or fishery impact on length structure                                     |
-| SAM method              | State-space flexibility                                                           | Current practices in USA is focused on parametric modeling and SAM does not incorporate length in current form |
-| Age-length key (SS3)    | Allows for selectivity at length and tracks numbers- and age-at-length            | Can be slow due to dense matrices and does not track length specific fishing impacts                           |
-| Full age-length         | Does not assume fixed age-length key with a potential to scale complexity/runtime | Could be computationally intensive based on bin size                                                           |
 
 ## References
 
@@ -219,11 +273,11 @@ A purely length structured model could be produced by using n lengths subpopulat
 
 In SS3 the concept is: Sub-populations are biologically identified. Characteristics are: sex, growth morph, settlement timing (within year), platoon (for implementation of size-based survivorship). For each biology x settlement timing, fish are distributed across sexes and across platoons at birth. All reside in a N-at-age matrix with a dimension, g. natage(t,p,g,a) where t is yr&season, p is area, g is biology. A fleet operating in area p affects all bio groups in that area according to their selectivity and catchability. Recruits are distributed across populations and areas at birth. When fish of a given g move between areas, they are still the same “g” biologically. This is a bit limiting as it means that growth rate cannot be area-specific in SS3. Although a fast-growing morph could recruit into one area and a slow growing morph into another area and they can move among the areas. Alternatively, growth could be area-specific and when fish move between areas, the mean size of fish in each destination area would be the weighted mean of resident and immigrant fish. This means that mean size-at-age would be very dynamic and cause lots of computations.
 
-| Approach                       | Pros                                                                                                     | Cons                                                                                                                                                                                                                                                                                                                       |
-|--------------------------------|----------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Approach | Pros | Cons |
+|------------------|------------------|------------------------------------|
 | Populations are subpopulations | Subpopulation is easily interpretable and follows structure we are familiar with, computationally simple | Dynamics between sub-populations occur at a different timestep than those that can occur between ages within a sub-population, limits the applicability of density-dependent processes such as cannibalism, less flexible than specifying fully flexible population segments since each population must have age structure |
-| Dynamic subpopulations         | Subpopulations do not need age structure and interact in real time, and are very flexible and extensible | Bookkeeping might mean replicating complex structures anyway                                                                                                                                                                                                                                                               |
-| Biological subpopulations      | Easier biological interpretability                                                                       | Harder to extend to new segments                                                                                                                                                                                                                                                                                           |
+| Dynamic subpopulations | Subpopulations do not need age structure and interact in real time, and are very flexible and extensible | Bookkeeping might mean replicating complex structures anyway |
+| Biological subpopulations | Easier biological interpretability | Harder to extend to new segments |
 
 ## Use cases
 
